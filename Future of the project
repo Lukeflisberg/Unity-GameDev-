@@ -1,0 +1,27 @@
+Coding:
+
+Notes:
+- Cold effect not going down when in radius of "isTrigger collider"
+- Hp does regen when in "isTrigger collider" though is not being reset to max allowing it to go over max
+
+
+What to add:
+- Simple enemy
+- Simple Resources
+
+Simple Enemy Functions:
+- Moves towards player when in radius
+- If the player is too far away it will return back to its starter position
+- Move back to starter position when player is close to the light source causing the isSafe effect
+- Spawns randomly in specific area *harder and not necessary yet*
+
+Simple Resources:
+- Rock, Tree
+- Rock has chance for flint and stone
+- Tree has chance for wood and leaves
+
+Simple Crafting System:
+- has crafting gui 
+- has option to show only craftables and all resources
+- Displays image of the craftable thing and the resources required
+- Maybe add a search? *not necessary yet*
