@@ -1,0 +1,247 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerController : MonoBehaviour
+{
+    public Rigidbody rb;
+    public SpriteRenderer theSR;
+    public Transform groundPoint;
+    public Animator anim, flipAnim;
+
+    private Vector2 moveInput;
+    public LayerMask whatIsGround;
+
+    public KeyCode RotationKeyPos, RotationKeyNeg;
+
+    public static float moveSpeed = 5f, jumpForce = 10f, coldEffectLevel = 0f, maxColdEffectLevel = 100f, Hp = 100f, maxHp = 100f, yRotation = 0f, rotationSpeed = 15f;
+    //private float stuff;
+
+    public bool isGrounded, movingBackwards, isInvincible, isDead;
+    //private bool stuff;
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        Debug.Log("Compiling Comeplete");
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        //if not dead
+        if (!isDead)
+        {
+            Move();
+            CheckCollision();
+            Jump();
+            Rotate();
+            CheckRotations();
+            ColdEffect();
+        }
+
+        //if is dead
+        else
+        {
+            Death();
+        }
+    }
+
+    //Voids
+
+    void Move()
+    {
+        //movement
+        moveInput.x = Input.GetAxis("Horizontal");
+        moveInput.y = Input.GetAxis("Vertical");
+        moveInput.Normalize();
+
+        Vector3 movement = new Vector3(moveInput.x, 0, moveInput.y);
+        transform.Translate(moveSpeed * Time.deltaTime * movement);
+
+        //rb.velocity = new Vector3(moveInput.x * moveSpeed, rb.velocity.y, moveInput.y * moveSpeed);
+
+        anim.SetFloat("moveSpeed", rb.velocity.magnitude);
+    }
+    void CheckCollision()
+    {
+        //collision
+        RaycastHit hit;
+        if (Physics.Raycast(groundPoint.position, Vector3.down, out hit, .3f, whatIsGround))
+        {
+            isGrounded = true;
+        }
+        else
+        {
+            isGrounded = false;
+        }
+    }
+    void Jump()
+    {
+        //jumping
+        if (Input.GetButtonDown("Jump") && isGrounded)
+        {
+            rb.velocity += new Vector3(0f, jumpForce, 0f);
+        }
+
+        anim.SetBool("onGround", isGrounded);
+    }
+    void Rotate()
+    {
+        //rotate right
+        if (Input.GetKeyDown(RotationKeyPos))
+        {
+            if (yRotation >= 360)
+            {
+                yRotation = 0;
+            }
+
+            yRotation += 90;
+            
+            //theSR.transform.rotation = Quaternion.Euler(theSR.transform.rotation.x, 0, theSR.transform.rotation.z);
+        }
+
+        //rotate left
+        if (Input.GetKeyDown(RotationKeyNeg))
+        {
+            if (yRotation >= 360)
+            {
+                yRotation = 0;
+            }
+
+            yRotation -= 90;
+
+            //theSR.transform.rotation = Quaternion.Euler(theSR.transform.rotation.x, 0, theSR.transform.rotation.z);
+        }
+
+        transform.rotation = Quaternion.Euler(transform.rotation.x, yRotation, transform.rotation.z);
+    }
+    void CheckRotations()
+    {
+        //flipping 
+        if (!theSR.flipX && moveInput.x < 0)
+        {
+            theSR.flipX = true;
+            flipAnim.SetTrigger("Flip");
+
+        }
+        else if (theSR.flipX && moveInput.x > 0)
+        {
+            theSR.flipX = false;
+            flipAnim.SetTrigger("Flip");
+        }
+
+        //determening if moving backwards
+        if (!movingBackwards && moveInput.y > 0)
+        {
+            movingBackwards = true;
+            flipAnim.SetTrigger("Flip");
+        }
+        else if (movingBackwards && moveInput.y < 0)
+        {
+            movingBackwards = false;
+            flipAnim.SetTrigger("Flip");
+        }
+        anim.SetBool("movingBackwards", movingBackwards);
+    }
+    void ColdEffect()
+    {
+        //if you are not fronzen, start to freeeze
+        if (coldEffectLevel < maxColdEffectLevel)
+        {
+            coldEffectLevel += 1 * Time.deltaTime;
+        }
+
+        //if frozen, take damage
+        else if (coldEffectLevel >= maxColdEffectLevel)
+        {
+            coldEffectLevel = maxColdEffectLevel;
+            StartCoroutine(ColdEffectDamageCountDown());
+
+            IEnumerator ColdEffectDamageCountDown()
+            {
+                while (true)
+                {
+                    yield return new WaitForSeconds(1);
+                    TakeDamage(maxHp / 20);
+                }
+            }
+        }
+    }
+    void Death()
+    {
+        if (isDead)
+        {
+            //do something
+        }
+    }
+
+    //Input Inflictions
+    public void RegeneratingHealth(float regeneratingAmount)
+    {
+        //if your hp is maxed or higher than max
+        if (Hp > maxHp)
+        {
+            //reset hp to max
+            Hp = maxHp;
+            Debug.Log("ReachedMaximum Hp amount");
+        }
+
+        //if HP is lower than maxHP
+        else if (Hp < maxHp)
+        {
+            //regenerate health every second
+            StartCoroutine(RegeneratingHealthProcess());
+
+            IEnumerator RegeneratingHealthProcess()
+            {
+                while (true)
+                {
+                    Hp += regeneratingAmount;
+                    yield return new WaitForSeconds(1);
+                }
+            }
+        }
+    }
+    public void TakeDamage(float inflictionAmount)
+    {
+        //if you can take damage
+        if (!isInvincible)
+        {
+            //take damage
+            Hp -= inflictionAmount;
+
+            //start invincibility frames
+            isInvincible = true;
+            StartCoroutine(InvincibilityFrames());
+
+            IEnumerator InvincibilityFrames()
+            {
+                while (true)
+                {
+                    //stop invincibility frames
+                    yield return new WaitForSeconds(1);
+                    isInvincible = false;
+                }
+            }
+        }
+
+        if (0 >= Hp)
+        {
+            Hp = 0;
+            isDead = true;
+        }
+    }
+    public void RegenerationHealth(float regenerationAmount)
+    {
+        //for hp potions for immediate effect
+        Hp += regenerationAmount;
+
+        if (Hp > maxHp)
+        {
+            //reset hp to max
+            Hp = maxHp;
+            Debug.Log("ReachedMaximum Hp amount");
+        }
+    }
+}
