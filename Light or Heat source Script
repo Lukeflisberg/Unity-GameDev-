@@ -1,0 +1,62 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Heatsource : MonoBehaviour
+{
+    public SphereCollider sp;
+
+    public PlayerController playerController;
+
+    public float startingRadius, currentRadius, addingRadius;
+
+    public KeyCode RaiseKey;
+
+    public bool healthRegen, coldEffectClear, isSafe;
+
+    // Start is called before the first frame update
+    void Start()
+    {
+        sp.radius = startingRadius;
+    }
+
+    // Update is called once per frame
+    void Update()
+    {
+        if (Input.GetKey(RaiseKey))
+        {
+            sp.radius = currentRadius + addingRadius;
+            currentRadius = sp.radius;
+        }
+    }
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.CompareTag("Player"))
+        {
+            if (healthRegen)
+            {
+                StartCoroutine(CallCooldown());
+
+                IEnumerator CallCooldown()
+                {
+                    while (true)
+                    {
+                        playerController.RegeneratingHealth(10);
+                        yield return new WaitForSeconds(1);
+                    }
+                }
+            }
+
+            if (coldEffectClear)
+            {
+                //playerController.coldEffectLevel -= 10 * Time.deltaTime;
+            }
+
+            if (isSafe)
+            {
+                //playerController.TakeDamage(10);
+            }
+        }
+    }
+}
